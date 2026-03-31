@@ -53,6 +53,7 @@ WP_LANG="de_DE"
 WP_TIMEZONE="Europe/Berlin"
 INSTALL_SSL=false
 INSTALL_PHPMYADMIN=false
+INSTALL_FILEBROWSER=false
 
 # ─── Parse arguments ──────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -66,7 +67,8 @@ while [[ $# -gt 0 ]]; do
     --lang)         WP_LANG="$2";          shift 2 ;;
     --timezone)     WP_TIMEZONE="$2";      shift 2 ;;
     --ssl)          INSTALL_SSL=true;        shift   ;;
-    --phpmyadmin)   INSTALL_PHPMYADMIN=true; shift   ;;
+    --phpmyadmin)    INSTALL_PHPMYADMIN=true;  shift   ;;
+    --filebrowser)   INSTALL_FILEBROWSER=true; shift   ;;
     *) warn "Unbekannter Parameter: $1"; shift ;;
   esac
 done
@@ -148,6 +150,12 @@ if [[ "$INSTALL_PHPMYADMIN" == false ]]; then
   [[ "${_pma,,}" == "j" || "${_pma,,}" == "y" ]] && INSTALL_PHPMYADMIN=true
 fi
 
+# ─── FileBrowser installieren? ────────────────────────────────────────────────
+if [[ "$INSTALL_FILEBROWSER" == false ]]; then
+  read -rp "$(echo -e "${BOLD}FileBrowser installieren? (Subdomain: files.${WP_DOMAIN}) [j/N]:${RESET} ")" _fb
+  [[ "${_fb,,}" == "j" || "${_fb,,}" == "y" ]] && INSTALL_FILEBROWSER=true
+fi
+
 # ─── Generate random secrets ──────────────────────────────────────────────────
 DB_NAME="wp_$(tr -dc 'a-z0-9' </dev/urandom | head -c 8 || true)"
 DB_USER="wpuser_$(tr -dc 'a-z0-9' </dev/urandom | head -c 6 || true)"
@@ -159,6 +167,7 @@ PMA_DB_USER="pma_$(tr -dc 'a-z0-9' </dev/urandom | head -c 6 || true)"
 PMA_DB_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 32 || true)"
 PMA_BLOWFISH="$(tr -dc 'A-Za-z0-9!@#$%^&*()_+' </dev/urandom | head -c 32 || true)"
 PMA_HTPASSWD_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16 || true)"
+FB_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 24 || true)"
 
 # ─── Summary ──────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}Installationsparameter:${RESET}"
@@ -170,6 +179,7 @@ echo -e "  Sprache       : ${CYAN}${WP_LANG}${RESET}"
 echo -e "  Zeitzone      : ${CYAN}${WP_TIMEZONE}${RESET}"
 echo -e "  SSL           : ${CYAN}${INSTALL_SSL}${RESET}"
 echo -e "  phpMyAdmin    : ${CYAN}${INSTALL_PHPMYADMIN}${RESET}"
+echo -e "  FileBrowser   : ${CYAN}${INSTALL_FILEBROWSER}${RESET}"
 echo -e "  DB Name       : ${CYAN}${DB_NAME}${RESET}"
 echo -e "  DB User       : ${CYAN}${DB_USER}${RESET}"
 echo ""
@@ -199,6 +209,15 @@ phpMyAdmin URL:     http://phpmyadmin.${WP_DOMAIN}
 phpMyAdmin Login:   ${WP_ADMIN_USER} / ${PMA_HTPASSWD_PASS}  (HTTP Basic Auth)
 PMA DB User:        ${PMA_DB_USER}
 PMA DB Password:    ${PMA_DB_PASS}
+EOF
+fi
+
+if [[ "$INSTALL_FILEBROWSER" == true ]]; then
+cat >> "$CREDS_FILE" <<EOF
+─────────────────────────────────────
+FileBrowser URL:    http://files.${WP_DOMAIN}
+FileBrowser User:   ${WP_ADMIN_USER}
+FileBrowser Pass:   ${FB_PASS}
 EOF
 fi
 chmod 600 "$CREDS_FILE"
@@ -1150,6 +1169,88 @@ NGINXPMA
   nginx -t && systemctl reload nginx
   success "phpMyAdmin installiert unter http://${PMA_DOMAIN}"
   info "DNS/NPM: Subdomain ${PMA_DOMAIN} → Server-IP auf Port 80 konfigurieren."
+fi
+
+# ─── FileBrowser ──────────────────────────────────────────────────────────────
+if [[ "$INSTALL_FILEBROWSER" == true ]]; then
+  section "FileBrowser"
+  FB_DOMAIN="files.${WP_DOMAIN}"
+  FB_PORT=8082
+  FB_DB="/var/lib/filebrowser/filebrowser.db"
+
+  # Aktuelle Version ermitteln
+  FB_VERSION=$(curl -fsSL https://api.github.com/repos/filebrowser/filebrowser/releases/latest \
+    2>/dev/null | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/' || true)
+  [[ -z "$FB_VERSION" || ! "$FB_VERSION" =~ ^[0-9] ]] && FB_VERSION="2.32.0"
+  info "FileBrowser Version: ${FB_VERSION}"
+
+  # Download
+  curl -fsSL "https://github.com/filebrowser/filebrowser/releases/download/v${FB_VERSION}/linux-amd64-filebrowser.tar.gz" \
+    -o /tmp/filebrowser.tar.gz
+  tar -xzf /tmp/filebrowser.tar.gz -C /usr/local/bin/ filebrowser
+  chmod +x /usr/local/bin/filebrowser
+  rm -f /tmp/filebrowser.tar.gz
+
+  mkdir -p /var/lib/filebrowser
+
+  # Konfiguration & Admin-User anlegen
+  filebrowser config init --database "$FB_DB"
+  filebrowser config set --database "$FB_DB" \
+    --address 127.0.0.1 \
+    --port "$FB_PORT" \
+    --root "${WP_DIR}" \
+    --log /var/log/filebrowser.log
+  filebrowser users add "${WP_ADMIN_USER}" "${FB_PASS}" --perm.admin \
+    --database "$FB_DB"
+
+  chown -R www-data:www-data /var/lib/filebrowser
+
+  # Systemd Service
+  cat > /etc/systemd/system/filebrowser.service <<FBSERVICE
+[Unit]
+Description=FileBrowser — Web File Manager
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+ExecStart=/usr/local/bin/filebrowser --database ${FB_DB}
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+FBSERVICE
+
+  systemctl daemon-reload
+  systemctl enable filebrowser
+  systemctl start filebrowser
+
+  # Nginx Vhost (Reverse Proxy zu FileBrowser)
+  cat > "/etc/nginx/sites-available/${FB_DOMAIN}.conf" <<NGINXFB
+server {
+    listen 80;
+    server_name ${FB_DOMAIN};
+
+    location / {
+        proxy_pass         http://127.0.0.1:${FB_PORT};
+        proxy_set_header   Host \$host;
+        proxy_set_header   X-Real-IP \$remote_addr;
+        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto \$scheme;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade \$http_upgrade;
+        proxy_set_header   Connection "upgrade";
+        proxy_read_timeout 86400;
+    }
+}
+NGINXFB
+
+  ln -sf "/etc/nginx/sites-available/${FB_DOMAIN}.conf" \
+         "/etc/nginx/sites-enabled/${FB_DOMAIN}.conf"
+  nginx -t && systemctl reload nginx
+  success "FileBrowser installiert unter http://${FB_DOMAIN}"
+  info "DNS/NPM: Subdomain ${FB_DOMAIN} → Server-IP auf Port 80 konfigurieren."
 fi
 
 # MySQL Slow Log Verzeichnis anlegen
