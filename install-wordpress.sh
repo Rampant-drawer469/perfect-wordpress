@@ -144,7 +144,7 @@ fi
 DB_NAME="wp_$(tr -dc 'a-z0-9' </dev/urandom | head -c 8 || true)"
 DB_USER="wpuser_$(tr -dc 'a-z0-9' </dev/urandom | head -c 6 || true)"
 DB_PASS="$(tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 32 || true)"
-DB_ROOT_PASS="$(tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 32 || true)"
+# DB_ROOT_PASS nicht mehr benötigt — MariaDB root nutzt unix_socket Auth
 WP_ADMIN_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 24 || true)"
 REDIS_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 || true)"
 
@@ -175,7 +175,7 @@ WP Admin Email:  ${WP_ADMIN_EMAIL}
 DB Name:         ${DB_NAME}
 DB User:         ${DB_USER}
 DB Password:     ${DB_PASS}
-DB Root Pass:    ${DB_ROOT_PASS}
+DB Root Access:  unix_socket (sudo mysql -uroot)
 Redis Password:  ${REDIS_PASS}
 EOF
 chmod 600 "$CREDS_FILE"
@@ -656,7 +656,7 @@ systemctl restart mariadb
 
 # MariaDB absichern und DB anlegen
 mysql -uroot <<SQLSETUP
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASS}';
+-- Root behält unix_socket-Auth (sicherer auf Debian/Ubuntu — kein Passwort nötig bei OS-Root)
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost','127.0.0.1','::1');
 DROP DATABASE IF EXISTS test;
@@ -978,7 +978,7 @@ cat > /etc/cron.daily/wp-db-backup <<DBBACKUP
 #!/bin/bash
 BACKUP_DIR="/root/backups/mysql"
 TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
-mysqldump -uroot -p'${DB_ROOT_PASS}' --single-transaction --routines --triggers \
+mysqldump -uroot --single-transaction --routines --triggers \
   '${DB_NAME}' | gzip > "\${BACKUP_DIR}/${DB_NAME}_\${TIMESTAMP}.sql.gz"
 # Backups älter als 7 Tage löschen
 find "\${BACKUP_DIR}" -name "*.sql.gz" -mtime +7 -delete
