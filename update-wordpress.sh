@@ -72,7 +72,8 @@ WP_DOMAIN=$(basename "$WP_PATH")
   WP_DOMAIN=$(grep -i "WP_HOME\|siteurl" "${WP_PATH}/wp-config.php" 2>/dev/null \
     | head -1 | sed "s/.*['\"]https\?:\/\/\([^'\"]*\)['\"].*/\1/" || echo "wordpress")
 
-WP_CLI="sudo -u www-data wp --path=${WP_PATH}"
+WP_BIN=$(command -v wp || command -v wpcli || echo "/usr/local/bin/wp")
+WP_CLI="sudo -u www-data ${WP_BIN} --path=${WP_PATH}"
 
 section "WordPress Stack Updater"
 echo -e "  WordPress-Pfad : ${CYAN}${WP_PATH}${RESET}"
