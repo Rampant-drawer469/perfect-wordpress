@@ -138,6 +138,16 @@ sudo bash update-wordpress.sh --ssl          # additionally: renew SSL certifica
 | `--ssl` | Renew SSL certificate via Certbot |
 | `--wp-path` | Custom WordPress path (auto-detected if omitted) |
 
+### Reset
+
+Removes everything installed by this script — WordPress, Nginx, PHP-FPM, MariaDB, Redis, Fail2ban, WP-CLI, phpMyAdmin, FileBrowser, SSL certificates, cron jobs and swap. Runs without any prompts.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
+```
+
+> **Warning:** This is irreversible. All data including the database and uploaded files will be permanently deleted.
+
 <a href="https://www.buymeacoffee.com/djanzin"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=djanzin&button_colour=00354d&font_colour=ffffff&font_family=Cookie&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
 
 ---
@@ -269,6 +279,16 @@ sudo bash update-wordpress.sh --ssl          # Zusätzlich: SSL-Zertifikat erneu
 | `--wpcli` | WP-CLI auf neueste Version aktualisieren |
 | `--ssl` | SSL-Zertifikat via Certbot erneuern |
 | `--wp-path` | Eigener WordPress-Pfad (wird automatisch erkannt falls nicht angegeben) |
+
+### Reset
+
+Entfernt alles was dieses Script installiert hat — WordPress, Nginx, PHP-FPM, MariaDB, Redis, Fail2ban, WP-CLI, phpMyAdmin, FileBrowser, SSL-Zertifikate, Cron-Jobs und Swap. Läuft ohne Rückfragen durch.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
+```
+
+> **Warnung:** Dieser Vorgang ist unwiderruflich. Alle Daten einschließlich Datenbank und hochgeladener Dateien werden dauerhaft gelöscht.
 
 <a href="https://www.buymeacoffee.com/djanzin"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=djanzin&button_colour=00354d&font_colour=ffffff&font_family=Cookie&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
 
