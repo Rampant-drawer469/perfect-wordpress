@@ -607,6 +607,16 @@ success "PHP ${PHP_VERSION}-FPM mit OPcache konfiguriert."
 # 4. MARIADB
 # =============================================================================
 section "4/9 — MariaDB"
+
+# Vorherige MariaDB-Installation bereinigen (verhindert Passwort-Konflikte bei Wiederholung)
+if dpkg -l mariadb-server 2>/dev/null | grep -q '^ii'; then
+  info "Vorherige MariaDB-Installation erkannt — bereinige für Neuinstallation..."
+  systemctl stop mariadb 2>/dev/null || true
+  apt-get purge -y -qq --auto-remove mariadb-server mariadb-client mariadb-common 2>/dev/null || true
+  rm -rf /var/lib/mysql /etc/mysql/mariadb.conf.d/99-wordpress.cnf
+  info "MariaDB bereinigt."
+fi
+
 apt-get install -y -qq mariadb-server mariadb-client
 systemctl enable mariadb
 
