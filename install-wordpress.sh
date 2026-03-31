@@ -1003,15 +1003,8 @@ sudo -u www-data wp core install \
 sudo -u www-data wp plugin install redis-cache --activate --path="$WP_DIR"
 sudo -u www-data wp redis enable --path="$WP_DIR"
 
-# Nginx Helper installieren & konfigurieren
+# Nginx Helper installieren (Konfiguration nach URL-Setup weiter unten)
 sudo -u www-data wp plugin install nginx-helper --activate --path="$WP_DIR"
-sudo -u www-data wp option update rt_wp_nginx_helper_options \
-  '{"enable_purge":"1","cache_method":"enable_fastcgi","purge_method":"unlink_files","enable_map":"0","enable_log":"0","log_level":"INFO","log_filesize":"5","enable_stamp":"0","purge_homepage_on_edit":"1","purge_homepage_on_del":"1","purge_archive_on_edit":"1","purge_archive_on_del":"1","purge_page_on_mod":"1","purge_page_on_new_comment":"1","purge_page_on_deleted_comment":"1"}' \
-  --format=json --path="$WP_DIR"
-# Plugin neu aktivieren um bekannten Berechtigungsfehler bei Erstinstallation zu beheben
-sudo -u www-data wp plugin deactivate nginx-helper --path="$WP_DIR"
-sudo -u www-data wp plugin activate nginx-helper --path="$WP_DIR"
-success "Nginx Helper installiert und konfiguriert (FastCGI-Cache-Purge aktiv)."
 
 # Standard-Plugins & Themes bereinigen
 sudo -u www-data wp plugin delete hello akismet --path="$WP_DIR" 2>/dev/null || true
@@ -1039,6 +1032,15 @@ if [[ "$REVERSE_PROXY" == true || "$INSTALL_SSL" == true ]]; then
   sudo -u www-data wp option update home    "https://${WP_DOMAIN}" --path="$WP_DIR"
   info "WordPress URLs auf https://${WP_DOMAIN} gesetzt."
 fi
+
+# Nginx Helper konfigurieren & neu aktivieren (nach URL + Permalink Setup,
+# damit der Berechtigungsfehler bei Erstinstallation nicht auftritt)
+sudo -u www-data wp option update rt_wp_nginx_helper_options \
+  '{"enable_purge":"1","cache_method":"enable_fastcgi","purge_method":"unlink_files","enable_map":"0","enable_log":"0","log_level":"INFO","log_filesize":"5","enable_stamp":"0","purge_homepage_on_edit":"1","purge_homepage_on_del":"1","purge_archive_on_edit":"1","purge_archive_on_del":"1","purge_page_on_mod":"1","purge_page_on_new_comment":"1","purge_page_on_deleted_comment":"1"}' \
+  --format=json --path="$WP_DIR"
+sudo -u www-data wp plugin deactivate nginx-helper --path="$WP_DIR"
+sudo -u www-data wp plugin activate nginx-helper --path="$WP_DIR"
+success "Nginx Helper konfiguriert (FastCGI-Cache-Purge aktiv)."
 
 success "WP-CLI installiert und WordPress konfiguriert."
 
