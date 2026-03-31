@@ -943,8 +943,8 @@ section "9/9 — Logrotation, Cron & finale Optimierungen"
 
 # cron-Daemon sicherstellen (auf Debian 13 nicht vorinstalliert)
 if ! command -v crontab &>/dev/null; then
-  apt-get install -y -qq cron
-  systemctl enable cron
+  apt-get install -y -qq --no-install-recommends cron
+  systemctl enable cron 2>/dev/null || true
 fi
 
 # Logrotation für Nginx / PHP / MySQL
