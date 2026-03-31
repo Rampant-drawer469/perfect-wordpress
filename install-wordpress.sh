@@ -1186,8 +1186,8 @@ sudo -u www-data wp core install \
 sudo -u www-data wp plugin install redis-cache --activate --path="$WP_DIR"
 sudo -u www-data wp redis enable --path="$WP_DIR"
 
-# Nginx Helper installieren (Konfiguration nach URL-Setup weiter unten)
-sudo -u www-data wp plugin install nginx-helper --activate --path="$WP_DIR"
+# Nginx Helper nur installieren — Aktivierung erfolgt NACH URL + Permalink Setup
+sudo -u www-data wp plugin install nginx-helper --path="$WP_DIR"
 
 # Standard-Plugins & Themes bereinigen
 sudo -u www-data wp plugin delete hello akismet --path="$WP_DIR" 2>/dev/null || true
@@ -1216,12 +1216,11 @@ if [[ "$REVERSE_PROXY" == true || "$INSTALL_SSL" == true ]]; then
   info "$L_URLS_HTTPS"
 fi
 
-# Nginx Helper konfigurieren & neu aktivieren (nach URL + Permalink Setup,
-# damit der Berechtigungsfehler bei Erstinstallation nicht auftritt)
+# Nginx Helper konfigurieren & erstmals aktivieren (nach URL + Permalink Setup,
+# damit der Activation-Hook nur einmal und mit korrekten Einstellungen läuft)
 sudo -u www-data wp option update rt_wp_nginx_helper_options \
-  '{"enable_purge":"1","cache_method":"enable_fastcgi","purge_method":"unlink_files","enable_map":"0","enable_log":"0","log_level":"INFO","log_filesize":"5","enable_stamp":"0","purge_homepage_on_edit":"1","purge_homepage_on_del":"1","purge_archive_on_edit":"1","purge_archive_on_del":"1","purge_page_on_mod":"1","purge_page_on_new_comment":"1","purge_page_on_deleted_comment":"1"}' \
+  '{"enable_purge":"1","cache_method":"enable_fastcgi","purge_method":"get_request","nginx_server_hostname":"127.0.0.1","nginx_server_port":"80","enable_map":"0","enable_log":"0","log_level":"INFO","log_filesize":"5","enable_stamp":"0","purge_homepage_on_edit":"1","purge_homepage_on_del":"1","purge_archive_on_edit":"1","purge_archive_on_del":"1","purge_page_on_mod":"1","purge_page_on_new_comment":"1","purge_page_on_deleted_comment":"1"}' \
   --format=json --path="$WP_DIR"
-sudo -u www-data wp plugin deactivate nginx-helper --path="$WP_DIR"
 sudo -u www-data wp plugin activate nginx-helper --path="$WP_DIR"
 success "$L_NGINX_HELPER_OK"
 
