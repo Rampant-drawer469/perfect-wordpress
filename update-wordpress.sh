@@ -167,7 +167,70 @@ systemctl restart "php${PHP_VERSION}-fpm" 2>/dev/null && \
 
 success "Alle Caches geleert."
 
-# ─── 7. SSL-Zertifikat erneuern ───────────────────────────────────────────────
+# ─── 7. phpMyAdmin aktualisieren ─────────────────────────────────────────────
+PMA_DIR="/var/www/phpmyadmin"
+if [[ -d "$PMA_DIR" ]]; then
+  section "phpMyAdmin Update"
+  PMA_CURRENT=$(cat "${PMA_DIR}/VERSION" 2>/dev/null || \
+    grep -r "PMA_VERSION" "${PMA_DIR}/libraries/classes/Config.php" 2>/dev/null | \
+    head -1 | grep -oP "[\d.]+" | head -1 || echo "unbekannt")
+  info "Installierte Version: ${PMA_CURRENT}"
+
+  PMA_LATEST=$(curl -fsSL https://www.phpmyadmin.net/home_page/version.txt 2>/dev/null \
+    | head -1 | tr -d '[:space:]') || true
+
+  if [[ -z "$PMA_LATEST" ]]; then
+    warn "phpMyAdmin Latest-Version konnte nicht abgerufen werden — überspringe."
+  elif [[ "$PMA_CURRENT" == "$PMA_LATEST" ]]; then
+    success "phpMyAdmin ist aktuell (${PMA_CURRENT})."
+  else
+    info "Aktualisiere phpMyAdmin: ${PMA_CURRENT} → ${PMA_LATEST}"
+    curl -fsSL "https://files.phpmyadmin.net/phpMyAdmin/${PMA_LATEST}/phpMyAdmin-${PMA_LATEST}-all-languages.tar.gz" \
+      -o /tmp/phpmyadmin.tar.gz
+    tar -xzf /tmp/phpmyadmin.tar.gz -C /tmp/
+    # Konfiguration sichern
+    [[ -f "${PMA_DIR}/config.inc.php" ]] && \
+      cp "${PMA_DIR}/config.inc.php" /tmp/phpmyadmin_config.inc.php.bak
+    # Dateien ersetzen (Konfiguration ausschließen)
+    rsync -a --exclude="config.inc.php" \
+      "/tmp/phpMyAdmin-${PMA_LATEST}-all-languages/" "${PMA_DIR}/"
+    # Konfiguration wiederherstellen
+    [[ -f /tmp/phpmyadmin_config.inc.php.bak ]] && \
+      cp /tmp/phpmyadmin_config.inc.php.bak "${PMA_DIR}/config.inc.php"
+    rm -rf /tmp/phpmyadmin.tar.gz "/tmp/phpMyAdmin-${PMA_LATEST}-all-languages"
+    chown -R www-data:www-data "$PMA_DIR"
+    success "phpMyAdmin aktualisiert auf ${PMA_LATEST}."
+  fi
+fi
+
+# ─── 8. FileBrowser aktualisieren ────────────────────────────────────────────
+FB_BIN="/usr/local/bin/filebrowser"
+if [[ -x "$FB_BIN" ]]; then
+  section "FileBrowser Update"
+  FB_CURRENT=$("$FB_BIN" version 2>/dev/null | grep -oP "v[\d.]+" | head -1 | tr -d 'v' || echo "unbekannt")
+  info "Installierte Version: ${FB_CURRENT}"
+
+  FB_LATEST=$(curl -fsSL https://api.github.com/repos/filebrowser/filebrowser/releases/latest \
+    2>/dev/null | grep '"tag_name"' | head -1 | grep -oP '[\d.]+') || true
+
+  if [[ -z "$FB_LATEST" ]]; then
+    warn "FileBrowser Latest-Version konnte nicht abgerufen werden — überspringe."
+  elif [[ "$FB_CURRENT" == "$FB_LATEST" ]]; then
+    success "FileBrowser ist aktuell (${FB_CURRENT})."
+  else
+    info "Aktualisiere FileBrowser: ${FB_CURRENT} → ${FB_LATEST}"
+    systemctl stop filebrowser 2>/dev/null || true
+    curl -fsSL "https://github.com/filebrowser/filebrowser/releases/download/v${FB_LATEST}/linux-amd64-filebrowser.tar.gz" \
+      -o /tmp/filebrowser.tar.gz
+    tar -xzf /tmp/filebrowser.tar.gz -C /usr/local/bin/ filebrowser
+    chmod +x "$FB_BIN"
+    rm -f /tmp/filebrowser.tar.gz
+    systemctl start filebrowser 2>/dev/null || true
+    success "FileBrowser aktualisiert auf ${FB_LATEST}."
+  fi
+fi
+
+# ─── 9. SSL-Zertifikat erneuern ───────────────────────────────────────────────
 if [[ "$UPDATE_SSL" == true ]]; then
   section "SSL-Zertifikat erneuern"
   if command -v certbot &>/dev/null; then
@@ -179,9 +242,9 @@ if [[ "$UPDATE_SSL" == true ]]; then
   fi
 fi
 
-# ─── 8. Service-Status ────────────────────────────────────────────────────────
+# ─── 10. Service-Status ───────────────────────────────────────────────────────
 section "Service-Status"
-for svc in nginx "php${PHP_VERSION}-fpm" mariadb redis-server; do
+for svc in nginx "php${PHP_VERSION}-fpm" mariadb redis-server filebrowser; do
   if systemctl is-active --quiet "$svc" 2>/dev/null; then
     echo -e "  ${GREEN}[OK]${RESET}    $svc"
   else
