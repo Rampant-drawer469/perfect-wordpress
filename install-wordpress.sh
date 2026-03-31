@@ -7,7 +7,7 @@
 # Usage:
 #   sudo bash install-wordpress.sh
 #   sudo bash install-wordpress.sh --domain example.com --email admin@example.com \
-#     --php 8.3 --memory 256M --lang de_DE --timezone Europe/Berlin --ssl
+#     --php 8.4 --memory 256M --lang de_DE --timezone Europe/Berlin --ssl
 #
 # Tested on: Ubuntu 24.04 LTS · Debian 13 (Trixie)
 # =============================================================================
@@ -95,12 +95,14 @@ if [[ "$PHP_VERSION" == "8.3" ]]; then
   echo -e "  2) PHP 8.2"
   echo -e "  3) PHP 8.3  ${CYAN}[Standard / empfohlen]${RESET}"
   echo -e "  4) PHP 8.4"
-  read -rp "$(echo -e "${BOLD}Auswahl [1-4, Standard: 3]:${RESET} ")" _php_choice
+  echo -e "  5) PHP 8.5  ${YELLOW}(Entwicklungsversion)${RESET}"
+  read -rp "$(echo -e "${BOLD}Auswahl [1-5, Standard: 3]:${RESET} ")" _php_choice
   case "${_php_choice:-3}" in
     1) PHP_VERSION="8.1" ;;
     2) PHP_VERSION="8.2" ;;
     3) PHP_VERSION="8.3" ;;
     4) PHP_VERSION="8.4" ;;
+    5) PHP_VERSION="8.5" ; warn "PHP 8.5 ist eine Entwicklungsversion — nicht für Produktion empfohlen." ;;
     *) warn "Ungültige Auswahl, verwende PHP 8.3."; PHP_VERSION="8.3" ;;
   esac
 fi

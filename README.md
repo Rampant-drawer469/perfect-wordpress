@@ -2,7 +2,7 @@
 
 ![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04_LTS-E95420?logo=ubuntu&logoColor=white)
 ![Debian 13](https://img.shields.io/badge/Debian-13_Trixie-A81D33?logo=debian&logoColor=white)
-![PHP 8.1–8.4](https://img.shields.io/badge/PHP-8.1_|_8.2_|_8.3_|_8.4-777BB4?logo=php&logoColor=white)
+![PHP 8.1–8.5](https://img.shields.io/badge/PHP-8.1_|_8.2_|_8.3_|_8.4_|_8.5-777BB4?logo=php&logoColor=white)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
 Automated, production-ready WordPress installer for Ubuntu 24.04 LTS and Debian 13 (Trixie).
@@ -17,7 +17,7 @@ A single bash script that sets up a hardened, high-performance WordPress server 
 
 **Stack:**
 - **Web server:** Nginx + FastCGI cache (1 GB zone) + Brotli & Gzip compression
-- **PHP:** PHP-FPM 8.1/8.2/8.3/8.4 (selectable) + OPcache JIT
+- **PHP:** PHP-FPM 8.1/8.2/8.3/8.4/8.5 (selectable) + OPcache JIT
 - **Database:** MariaDB (tuned: 256 MB InnoDB buffer, slow query log)
 - **Object cache:** Redis (128 MB LRU, object cache only)
 - **Security:** UFW firewall + Fail2ban (SSH + Nginx + WordPress login jails)
@@ -41,7 +41,7 @@ sudo bash install-wordpress.sh
 The script will interactively ask for:
 - Domain name & admin email
 - Site title & admin username
-- PHP version (8.1 / 8.2 / **8.3** / 8.4)
+- PHP version (8.1 / 8.2 / **8.3** / 8.4 / 8.5 ⚠️ dev)
 - PHP memory limit (128M / **256M** / 512M / 1024M)
 - WordPress language (default: `de_DE`)
 - Timezone (default: `Europe/Berlin`)
@@ -72,7 +72,7 @@ sudo bash install-wordpress.sh \
 | `--email` | WordPress admin email | — |
 | `--title` | WordPress site title | `My WordPress Site` |
 | `--admin-user` | WordPress admin username | `admin` |
-| `--php` | PHP version (`8.1`, `8.2`, `8.3`, `8.4`) | `8.3` |
+| `--php` | PHP version (`8.1`, `8.2`, `8.3`, `8.4`, `8.5`) | `8.3` |
 | `--memory` | PHP memory limit (`128M`, `256M`, `512M`, `1024M`) | `256M` |
 | `--lang` | WordPress language code | `de_DE` |
 | `--timezone` | PHP/WordPress timezone | `Europe/Berlin` |
