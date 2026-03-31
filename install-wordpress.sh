@@ -1094,12 +1094,14 @@ define( 'DISABLE_WP_CRON', true );
 DISABLEWPCRON
 
 cat > /etc/cron.d/wordpress-cron <<WPCRON
-*/5 * * * * www-data /usr/local/bin/wp --path=${WP_DIR} cron event run --due-now --quiet
+* * * * * www-data /usr/local/bin/wp --path=${WP_DIR} cron event run --due-now --quiet
 WPCRON
 chmod 644 /etc/cron.d/wordpress-cron
 
 # WP-Cron einmalig direkt ausführen damit keine Events als "late" markiert werden
 sudo -u www-data /usr/local/bin/wp --path="${WP_DIR}" cron event run --due-now --quiet 2>/dev/null || true
+# Redis Cache Event explizit ausführen (wird beim Plugin-Aktivieren sofort geplant)
+sudo -u www-data /usr/local/bin/wp --path="${WP_DIR}" cron event run rediscache_discard_metrics --quiet 2>/dev/null || true
 
 # ─── Automatische Datenbank-Backups (täglich, 7 Tage Rotation) ────────────────
 mkdir -p /root/backups/mysql
