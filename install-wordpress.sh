@@ -497,7 +497,7 @@ if [[ "$OS_TYPE" == "ubuntu" ]]; then
 else
   # Debian: packages.sury.org (ondrej's offizielles Debian-Repo)
   curl -fsSL https://packages.sury.org/php/apt.gpg \
-    | gpg --dearmor -o /etc/apt/trusted.gpg.d/sury-php.gpg
+    | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/sury-php.gpg
   echo "deb https://packages.sury.org/php/ $(lsb_release -cs) main" \
     > /etc/apt/sources.list.d/sury-php.list
 fi
@@ -518,6 +518,9 @@ apt-get install -y -qq \
   "php${PHP_VERSION}-imagick" \
   "php${PHP_VERSION}-opcache" \
   "php${PHP_VERSION}-cli"
+
+# Standard www.conf Pool entfernen — verhindert Socket-Konflikt mit wordpress.conf
+rm -f "/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
 
 # PHP-FPM Pool Optimierung
 cat > "/etc/php/${PHP_VERSION}/fpm/pool.d/wordpress.conf" <<PHPPOOL
