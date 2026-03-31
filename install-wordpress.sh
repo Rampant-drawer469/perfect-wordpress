@@ -27,8 +27,18 @@ section() { echo -e "\n${BOLD}${CYAN}══════════════�
             echo -e "${BOLD}${CYAN}  $*${RESET}"; \
             echo -e "${BOLD}${CYAN}══════════════════════════════════════════${RESET}"; }
 
+# ─── Pre-scan for --english (needed before language block is set up) ──────────
+_ENGLISH_PRESCAN=false
+for _arg in "$@"; do [[ "$_arg" == "--english" ]] && _ENGLISH_PRESCAN=true && break; done
+
 # ─── Root check ───────────────────────────────────────────────────────────────
-[[ $EUID -ne 0 ]] && error "Dieses Script muss als root ausgeführt werden. Bitte 'sudo bash $0' verwenden."
+if [[ $EUID -ne 0 ]]; then
+  if [[ "$_ENGLISH_PRESCAN" == true ]]; then
+    error "This script must be run as root. Please use 'sudo bash $0'."
+  else
+    error "Dieses Script muss als root ausgeführt werden. Bitte 'sudo bash $0' verwenden."
+  fi
+fi
 
 # ─── OS detection ─────────────────────────────────────────────────────────────
 if grep -qi 'ubuntu' /etc/os-release; then
@@ -36,9 +46,17 @@ if grep -qi 'ubuntu' /etc/os-release; then
 elif grep -qi 'debian' /etc/os-release; then
   OS_TYPE="debian"
 else
-  error "Nicht unterstütztes OS. Ubuntu 24.04+ oder Debian 13+ erforderlich."
+  if [[ "$_ENGLISH_PRESCAN" == true ]]; then
+    error "Unsupported OS. Ubuntu 24.04+ or Debian 13+ required."
+  else
+    error "Nicht unterstütztes OS. Ubuntu 24.04+ oder Debian 13+ erforderlich."
+  fi
 fi
-info "Erkanntes Betriebssystem: $OS_TYPE"
+if [[ "$_ENGLISH_PRESCAN" == true ]]; then
+  info "Detected OS: $OS_TYPE"
+else
+  info "Erkanntes Betriebssystem: $OS_TYPE"
+fi
 
 # ─── Default configuration ────────────────────────────────────────────────────
 WP_DOMAIN=""
@@ -55,6 +73,7 @@ INSTALL_SSL=false
 INSTALL_PHPMYADMIN=false
 INSTALL_FILEBROWSER=false
 REVERSE_PROXY=false
+ENGLISH=false
 
 # ─── Parse arguments ──────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -71,100 +90,246 @@ while [[ $# -gt 0 ]]; do
     --phpmyadmin)    INSTALL_PHPMYADMIN=true;  shift   ;;
     --filebrowser)    INSTALL_FILEBROWSER=true;  shift   ;;
     --reverse-proxy)  REVERSE_PROXY=true;        shift   ;;
-    *) warn "Unbekannter Parameter: $1"; shift ;;
+    --english)        ENGLISH=true;              shift   ;;
+    *) if [[ "$_ENGLISH_PRESCAN" == true ]]; then warn "Unknown parameter: $1"; else warn "Unbekannter Parameter: $1"; fi; shift ;;
   esac
 done
 
+# ─── Language strings ─────────────────────────────────────────────────────────
+if [[ "$ENGLISH" == true ]]; then
+  L_ROOT_ERR="This script must be run as root. Please use 'sudo bash $0'."
+  L_OS_ERR="Unsupported OS. Ubuntu 24.04+ or Debian 13+ required."
+  L_OS_DETECTED="Detected OS"
+  L_UNKNOWN_PARAM="Unknown parameter"
+  L_SECTION_CONFIG="WordPress Production Installer — Configuration"
+  L_PROMPT_DOMAIN="Domain (e.g. example.com)"
+  L_ERR_DOMAIN="Domain cannot be empty."
+  L_PROMPT_EMAIL="Admin e-mail"
+  L_ERR_EMAIL="E-mail cannot be empty."
+  L_PROMPT_TITLE="Site title [My WordPress Site]"
+  L_PROMPT_USER="WP admin username [admin]"
+  L_PHP_SELECT="Select PHP version"
+  L_PHP_STD="default / recommended"
+  L_PHP_DEV="development version"
+  L_PHP_WARN="PHP 8.5 is a development version — not recommended for production."
+  L_PHP_INVALID="Invalid selection, using PHP 8.3."
+  L_PROMPT_PHP="Selection [1-5, default: 3]"
+  L_MEM_SELECT="Select PHP memory limit"
+  L_MEM_SMALL="small VPS / low RAM"
+  L_MEM_STD="default / recommended"
+  L_MEM_MED="medium-sized sites"
+  L_MEM_LARGE="large / high-traffic sites"
+  L_MEM_INVALID="Invalid selection, using 256M."
+  L_PROMPT_MEM="Selection [1-4, default: 2]"
+  L_PROMPT_LANG="WordPress language [en_US]"
+  L_PROMPT_TZ="Timezone [Europe/Berlin]"
+  L_PROMPT_PROXY="Is the site behind a reverse proxy (NPM/Traefik/Cloudflare)? [y/N]"
+  L_PROXY_ACTIVE="Reverse proxy mode active — SSL via Certbot will be skipped."
+  L_PROMPT_SSL="Set up SSL with Let's Encrypt? [y/N]"
+  L_PROMPT_PMA="Install phpMyAdmin? (Subdomain: phpmyadmin.DOMAIN) [y/N]"
+  L_PROMPT_FB="Install FileBrowser? (Subdomain: files.DOMAIN) [y/N]"
+  L_SUMMARY="Installation parameters"
+  L_SUMMARY_DIR="WP directory"
+  L_SUMMARY_PHP="PHP version"
+  L_SUMMARY_MEM="Memory limit"
+  L_SUMMARY_LANG="Language"
+  L_SUMMARY_TZ="Timezone"
+  L_SUMMARY_PROXY="Reverse proxy"
+  L_PROMPT_CONFIRM="Install now? [y/N]"
+  L_ABORTED="Aborted."
+  L_CREDS_SAVED="Credentials saved"
+  L_SYSTEM_OK="System updated."
+  L_NGINX_REALIP="Nginx Real-IP module configured (real client IPs via X-Forwarded-For)."
+  L_NGINX_OK="Nginx configured with FastCGI cache."
+  L_MARIADB_CLEAN="Previous MariaDB installation detected — cleaning up..."
+  L_MARIADB_CLEANED="MariaDB cleaned."
+  L_REDIS_OK="Redis configured (127.0.0.1:6379, maxmemory=128mb, LRU)."
+  L_UFW_OK="UFW enabled: SSH, HTTP, HTTPS allowed."
+  L_F2B_OK="Fail2ban with WordPress and Nginx jails activated."
+  L_F2B_WHITELIST="Fail2ban: Private networks (10.x, 172.16.x, 192.168.x) always whitelisted."
+  L_WP_OK="WordPress downloaded and configured."
+  L_URLS_HTTPS="WordPress URLs set to https."
+  L_NGINX_HELPER_OK="Nginx Helper configured (FastCGI cache purge active)."
+  L_WPCLI_OK="WP-CLI installed and WordPress configured."
+  L_BACKUPS_OK="Automatic DB backups configured (/root/backups/mysql, 7-day rotation)."
+  L_SSL_OK="SSL certificate set up. HTTPS active."
+  L_SSL_WARN="Certbot failed — a reverse proxy (NPM/Cloudflare) may be in front of this server."
+  L_SSL_WARN2="SSL is managed by the reverse proxy. Certbot not needed on the WordPress server."
+  L_SSL_SKIP="SSL skipped. Set up manually: certbot --nginx -d"
+  L_SWAP_CREATE="RAM: %sMB — creating %s swap..."
+  L_SWAP_OK="Swap created and activated."
+  L_SWAP_EXISTS="Swap already present (%sMB) — skipping."
+  L_SECTION_1="1/9 — System Update"
+  L_SECTION_2="2/9 — Nginx + FastCGI Cache"
+  L_SECTION_4="4/9 — MariaDB"
+  L_SECTION_5="5/9 — Redis Object Cache"
+  L_SECTION_6="6/9 — UFW Firewall + Fail2ban"
+  L_SECTION_7="7/9 — Install WordPress"
+  L_SECTION_8="8/9 — WP-CLI"
+  L_SECTION_9="9/9 — Log Rotation, Cron & Final Optimizations"
+else
+  L_ROOT_ERR="Dieses Script muss als root ausgeführt werden. Bitte 'sudo bash $0' verwenden."
+  L_OS_ERR="Nicht unterstütztes OS. Ubuntu 24.04+ oder Debian 13+ erforderlich."
+  L_OS_DETECTED="Erkanntes Betriebssystem"
+  L_UNKNOWN_PARAM="Unbekannter Parameter"
+  L_SECTION_CONFIG="WordPress Production Installer — Konfiguration"
+  L_PROMPT_DOMAIN="Domain (z.B. example.com)"
+  L_ERR_DOMAIN="Domain darf nicht leer sein."
+  L_PROMPT_EMAIL="Admin E-Mail"
+  L_ERR_EMAIL="E-Mail darf nicht leer sein."
+  L_PROMPT_TITLE="Site-Titel [My WordPress Site]"
+  L_PROMPT_USER="WP Admin-Benutzername [admin]"
+  L_PHP_SELECT="PHP-Version auswählen"
+  L_PHP_STD="Standard / empfohlen"
+  L_PHP_DEV="Entwicklungsversion"
+  L_PHP_WARN="PHP 8.5 ist eine Entwicklungsversion — nicht für Produktion empfohlen."
+  L_PHP_INVALID="Ungültige Auswahl, verwende PHP 8.3."
+  L_PROMPT_PHP="Auswahl [1-5, Standard: 3]"
+  L_MEM_SELECT="PHP Memory Limit auswählen"
+  L_MEM_SMALL="kleiner VPS / wenig RAM"
+  L_MEM_STD="Standard / empfohlen"
+  L_MEM_MED="mittelgroße Seiten"
+  L_MEM_LARGE="große / hochfrequentierte Seiten"
+  L_MEM_INVALID="Ungültige Auswahl, verwende 256M."
+  L_PROMPT_MEM="Auswahl [1-4, Standard: 2]"
+  L_PROMPT_LANG="WordPress-Sprache [de_DE]"
+  L_PROMPT_TZ="Zeitzone [Europe/Berlin]"
+  L_PROMPT_PROXY="Läuft die Site hinter einem Reverse Proxy (NPM/Traefik/Cloudflare)? [j/N]"
+  L_PROXY_ACTIVE="Reverse Proxy Modus aktiv — SSL via Certbot wird übersprungen."
+  L_PROMPT_SSL="SSL mit Let's Encrypt einrichten? [j/N]"
+  L_PROMPT_PMA="phpMyAdmin installieren? (Subdomain: phpmyadmin.DOMAIN) [j/N]"
+  L_PROMPT_FB="FileBrowser installieren? (Subdomain: files.DOMAIN) [j/N]"
+  L_SUMMARY="Installationsparameter"
+  L_SUMMARY_DIR="WP-Verzeichnis"
+  L_SUMMARY_PHP="PHP-Version"
+  L_SUMMARY_MEM="Memory Limit"
+  L_SUMMARY_LANG="Sprache"
+  L_SUMMARY_TZ="Zeitzone"
+  L_SUMMARY_PROXY="Reverse Proxy"
+  L_PROMPT_CONFIRM="Jetzt installieren? [j/N]"
+  L_ABORTED="Abgebrochen."
+  L_CREDS_SAVED="Zugangsdaten gespeichert"
+  L_SYSTEM_OK="System aktualisiert."
+  L_NGINX_REALIP="Nginx Real-IP Modul konfiguriert (echte Client-IPs via X-Forwarded-For)."
+  L_NGINX_OK="Nginx konfiguriert mit FastCGI Cache."
+  L_MARIADB_CLEAN="Vorherige MariaDB-Installation erkannt — bereinige für Neuinstallation..."
+  L_MARIADB_CLEANED="MariaDB bereinigt."
+  L_REDIS_OK="Redis konfiguriert (127.0.0.1:6379, maxmemory=128mb, LRU)."
+  L_UFW_OK="UFW aktiviert: SSH, HTTP, HTTPS erlaubt."
+  L_F2B_OK="Fail2ban mit WordPress- und Nginx-Jails aktiviert."
+  L_F2B_WHITELIST="Fail2ban: Private Netzwerke (10.x, 172.16.x, 192.168.x) immer auf Whitelist."
+  L_WP_OK="WordPress heruntergeladen und konfiguriert."
+  L_URLS_HTTPS="WordPress URLs auf https gesetzt."
+  L_NGINX_HELPER_OK="Nginx Helper konfiguriert (FastCGI-Cache-Purge aktiv)."
+  L_WPCLI_OK="WP-CLI installiert und WordPress konfiguriert."
+  L_BACKUPS_OK="Automatische DB-Backups konfiguriert (/root/backups/mysql, 7 Tage Rotation)."
+  L_SSL_OK="SSL-Zertifikat eingerichtet. HTTPS aktiv."
+  L_SSL_WARN="Certbot fehlgeschlagen — möglicherweise läuft ein Reverse Proxy (NPM/Cloudflare) vor diesem Server."
+  L_SSL_WARN2="SSL wird in diesem Fall vom Reverse Proxy verwaltet. Certbot auf dem WordPress-Server nicht notwendig."
+  L_SSL_SKIP="SSL übersprungen. Manuell einrichten: certbot --nginx -d"
+  L_SWAP_CREATE="RAM: %sMB — lege %s Swap an..."
+  L_SWAP_OK="Swap angelegt und aktiviert."
+  L_SWAP_EXISTS="Swap bereits vorhanden (%sMB) — überspringe."
+  L_SECTION_1="1/9 — System Update"
+  L_SECTION_2="2/9 — Nginx + FastCGI Cache"
+  L_SECTION_4="4/9 — MariaDB"
+  L_SECTION_5="5/9 — Redis Object Cache"
+  L_SECTION_6="6/9 — UFW Firewall + Fail2ban"
+  L_SECTION_7="7/9 — WordPress installieren"
+  L_SECTION_8="8/9 — WP-CLI"
+  L_SECTION_9="9/9 — Logrotation, Cron & finale Optimierungen"
+fi
+
 # ─── Interactive prompts (if not provided via args) ────────────────────────────
-section "WordPress Production Installer — Konfiguration"
+section "$L_SECTION_CONFIG"
 
 if [[ -z "$WP_DOMAIN" ]]; then
-  read -rp "$(echo -e "${BOLD}Domain (z.B. example.com):${RESET} ")" WP_DOMAIN
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_DOMAIN}:${RESET} ")" WP_DOMAIN
 fi
-[[ -z "$WP_DOMAIN" ]] && error "Domain darf nicht leer sein."
+[[ -z "$WP_DOMAIN" ]] && error "$L_ERR_DOMAIN"
 
 if [[ -z "$WP_ADMIN_EMAIL" ]]; then
-  read -rp "$(echo -e "${BOLD}Admin E-Mail:${RESET} ")" WP_ADMIN_EMAIL
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_EMAIL}:${RESET} ")" WP_ADMIN_EMAIL
 fi
-[[ -z "$WP_ADMIN_EMAIL" ]] && error "E-Mail darf nicht leer sein."
+[[ -z "$WP_ADMIN_EMAIL" ]] && error "$L_ERR_EMAIL"
 
-read -rp "$(echo -e "${BOLD}Site-Titel [My WordPress Site]:${RESET} ")" _title
+read -rp "$(echo -e "${BOLD}${L_PROMPT_TITLE}:${RESET} ")" _title
 WP_SITE_TITLE="${_title:-$WP_SITE_TITLE}"
 
-read -rp "$(echo -e "${BOLD}WP Admin-Benutzername [admin]:${RESET} ")" _user
+read -rp "$(echo -e "${BOLD}${L_PROMPT_USER}:${RESET} ")" _user
 WP_ADMIN_USER="${_user:-$WP_ADMIN_USER}"
 
-# ─── PHP-Version auswählen ────────────────────────────────────────────────────
+# ─── PHP version selection ────────────────────────────────────────────────────
 if [[ "$PHP_VERSION" == "8.3" ]]; then
-  echo -e "\n${BOLD}PHP-Version auswählen:${RESET}"
+  echo -e "\n${BOLD}${L_PHP_SELECT}:${RESET}"
   echo -e "  1) PHP 8.1"
   echo -e "  2) PHP 8.2"
-  echo -e "  3) PHP 8.3  ${CYAN}[Standard / empfohlen]${RESET}"
+  echo -e "  3) PHP 8.3  ${CYAN}[${L_PHP_STD}]${RESET}"
   echo -e "  4) PHP 8.4"
-  echo -e "  5) PHP 8.5  ${YELLOW}(Entwicklungsversion)${RESET}"
-  read -rp "$(echo -e "${BOLD}Auswahl [1-5, Standard: 3]:${RESET} ")" _php_choice
+  echo -e "  5) PHP 8.5  ${YELLOW}(${L_PHP_DEV})${RESET}"
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_PHP}:${RESET} ")" _php_choice
   case "${_php_choice:-3}" in
     1) PHP_VERSION="8.1" ;;
     2) PHP_VERSION="8.2" ;;
     3) PHP_VERSION="8.3" ;;
     4) PHP_VERSION="8.4" ;;
-    5) PHP_VERSION="8.5" ; warn "PHP 8.5 ist eine Entwicklungsversion — nicht für Produktion empfohlen." ;;
-    *) warn "Ungültige Auswahl, verwende PHP 8.3."; PHP_VERSION="8.3" ;;
+    5) PHP_VERSION="8.5" ; warn "$L_PHP_WARN" ;;
+    *) warn "$L_PHP_INVALID"; PHP_VERSION="8.3" ;;
   esac
 fi
 
-# ─── PHP Memory Limit auswählen ───────────────────────────────────────────────
+# ─── PHP memory limit selection ───────────────────────────────────────────────
 if [[ "$PHP_MEMORY_LIMIT" == "256M" ]]; then
-  echo -e "\n${BOLD}PHP Memory Limit auswählen:${RESET}"
-  echo -e "  1) 128M   ${CYAN}(kleiner VPS / wenig RAM)${RESET}"
-  echo -e "  2) 256M   ${CYAN}[Standard / empfohlen]${RESET}"
-  echo -e "  3) 512M   ${CYAN}(mittelgroße Seiten)${RESET}"
-  echo -e "  4) 1024M  ${CYAN}(große / hochfrequentierte Seiten)${RESET}"
-  read -rp "$(echo -e "${BOLD}Auswahl [1-4, Standard: 2]:${RESET} ")" _mem_choice
+  echo -e "\n${BOLD}${L_MEM_SELECT}:${RESET}"
+  echo -e "  1) 128M   ${CYAN}(${L_MEM_SMALL})${RESET}"
+  echo -e "  2) 256M   ${CYAN}[${L_MEM_STD}]${RESET}"
+  echo -e "  3) 512M   ${CYAN}(${L_MEM_MED})${RESET}"
+  echo -e "  4) 1024M  ${CYAN}(${L_MEM_LARGE})${RESET}"
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_MEM}:${RESET} ")" _mem_choice
   case "${_mem_choice:-2}" in
     1) PHP_MEMORY_LIMIT="128M"  ;;
     2) PHP_MEMORY_LIMIT="256M"  ;;
     3) PHP_MEMORY_LIMIT="512M"  ;;
     4) PHP_MEMORY_LIMIT="1024M" ;;
-    *) warn "Ungültige Auswahl, verwende 256M."; PHP_MEMORY_LIMIT="256M" ;;
+    *) warn "$L_MEM_INVALID"; PHP_MEMORY_LIMIT="256M" ;;
   esac
 fi
 
-# ─── Sprache & Zeitzone ───────────────────────────────────────────────────────
+# ─── Language & timezone ─────────────────────────────────────────────────────
 if [[ "$WP_LANG" == "de_DE" ]]; then
-  read -rp "$(echo -e "${BOLD}WordPress-Sprache [de_DE]:${RESET} ")" _lang
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_LANG}:${RESET} ")" _lang
   WP_LANG="${_lang:-de_DE}"
 fi
 if [[ "$WP_TIMEZONE" == "Europe/Berlin" ]]; then
-  read -rp "$(echo -e "${BOLD}Zeitzone [Europe/Berlin]:${RESET} ")" _tz
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_TZ}:${RESET} ")" _tz
   WP_TIMEZONE="${_tz:-Europe/Berlin}"
 fi
 
-# ─── Reverse Proxy? ───────────────────────────────────────────────────────────
+# ─── Reverse proxy? ───────────────────────────────────────────────────────────
 if [[ "$REVERSE_PROXY" == false ]]; then
-  read -rp "$(echo -e "${BOLD}Läuft die Site hinter einem Reverse Proxy (NPM/Traefik/Cloudflare)? [j/N]:${RESET} ")" _rp
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_PROXY}${RESET} ")" _rp
   [[ "${_rp,,}" == "j" || "${_rp,,}" == "y" ]] && REVERSE_PROXY=true
 fi
 if [[ "$REVERSE_PROXY" == true ]]; then
-  info "Reverse Proxy Modus aktiv — SSL via Certbot wird übersprungen."
+  info "$L_PROXY_ACTIVE"
   INSTALL_SSL=false
 fi
 
-# ─── SSL mit Let's Encrypt? ───────────────────────────────────────────────────
+# ─── SSL with Let's Encrypt? ─────────────────────────────────────────────────
 if [[ "$INSTALL_SSL" == false && "$REVERSE_PROXY" == false ]]; then
-  read -rp "$(echo -e "${BOLD}SSL mit Let's Encrypt einrichten? [j/N]:${RESET} ")" _ssl
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_SSL}${RESET} ")" _ssl
   [[ "${_ssl,,}" == "j" || "${_ssl,,}" == "y" ]] && INSTALL_SSL=true
 fi
 
-# ─── phpMyAdmin installieren? ─────────────────────────────────────────────────
+# ─── phpMyAdmin? ─────────────────────────────────────────────────────────────
 if [[ "$INSTALL_PHPMYADMIN" == false ]]; then
-  read -rp "$(echo -e "${BOLD}phpMyAdmin installieren? (Subdomain: phpmyadmin.${WP_DOMAIN}) [j/N]:${RESET} ")" _pma
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_PMA/DOMAIN/$WP_DOMAIN}${RESET} ")" _pma
   [[ "${_pma,,}" == "j" || "${_pma,,}" == "y" ]] && INSTALL_PHPMYADMIN=true
 fi
 
-# ─── FileBrowser installieren? ────────────────────────────────────────────────
+# ─── FileBrowser? ────────────────────────────────────────────────────────────
 if [[ "$INSTALL_FILEBROWSER" == false ]]; then
-  read -rp "$(echo -e "${BOLD}FileBrowser installieren? (Subdomain: files.${WP_DOMAIN}) [j/N]:${RESET} ")" _fb
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_FB/DOMAIN/$WP_DOMAIN}${RESET} ")" _fb
   [[ "${_fb,,}" == "j" || "${_fb,,}" == "y" ]] && INSTALL_FILEBROWSER=true
 fi
 
@@ -182,22 +347,22 @@ PMA_HTPASSWD_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16 || true)"
 FB_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 24 || true)"
 
 # ─── Summary ──────────────────────────────────────────────────────────────────
-echo -e "\n${BOLD}Installationsparameter:${RESET}"
+echo -e "\n${BOLD}${L_SUMMARY}:${RESET}"
 echo -e "  Domain        : ${CYAN}${WP_DOMAIN}${RESET}"
-echo -e "  WP-Verzeichnis: ${CYAN}${WP_DIR}${RESET}"
-echo -e "  PHP-Version   : ${CYAN}${PHP_VERSION}${RESET}"
-echo -e "  Memory Limit  : ${CYAN}${PHP_MEMORY_LIMIT}${RESET}"
-echo -e "  Sprache       : ${CYAN}${WP_LANG}${RESET}"
-echo -e "  Zeitzone      : ${CYAN}${WP_TIMEZONE}${RESET}"
+echo -e "  ${L_SUMMARY_DIR}: ${CYAN}${WP_DIR}${RESET}"
+echo -e "  ${L_SUMMARY_PHP}   : ${CYAN}${PHP_VERSION}${RESET}"
+echo -e "  ${L_SUMMARY_MEM}  : ${CYAN}${PHP_MEMORY_LIMIT}${RESET}"
+echo -e "  ${L_SUMMARY_LANG}       : ${CYAN}${WP_LANG}${RESET}"
+echo -e "  ${L_SUMMARY_TZ}      : ${CYAN}${WP_TIMEZONE}${RESET}"
 echo -e "  SSL           : ${CYAN}${INSTALL_SSL}${RESET}"
-echo -e "  Reverse Proxy : ${CYAN}${REVERSE_PROXY}${RESET}"
+echo -e "  ${L_SUMMARY_PROXY} : ${CYAN}${REVERSE_PROXY}${RESET}"
 echo -e "  phpMyAdmin    : ${CYAN}${INSTALL_PHPMYADMIN}${RESET}"
 echo -e "  FileBrowser   : ${CYAN}${INSTALL_FILEBROWSER}${RESET}"
 echo -e "  DB Name       : ${CYAN}${DB_NAME}${RESET}"
 echo -e "  DB User       : ${CYAN}${DB_USER}${RESET}"
 echo ""
-read -rp "$(echo -e "${BOLD}Jetzt installieren? [j/N]:${RESET} ")" CONFIRM
-[[ "${CONFIRM,,}" != "j" && "${CONFIRM,,}" != "y" ]] && echo "Abgebrochen." && exit 0
+read -rp "$(echo -e "${BOLD}${L_PROMPT_CONFIRM}${RESET} ")" CONFIRM
+[[ "${CONFIRM,,}" != "j" && "${CONFIRM,,}" != "y" ]] && echo "$L_ABORTED" && exit 0
 
 # ─── Credentials speichern ────────────────────────────────────────────────────
 CREDS_FILE="/root/.wp_install_credentials_${WP_DOMAIN}.txt"
@@ -234,12 +399,12 @@ FileBrowser Pass:   ${FB_PASS}
 EOF
 fi
 chmod 600 "$CREDS_FILE"
-info "Zugangsdaten gespeichert: $CREDS_FILE"
+info "$L_CREDS_SAVED: $CREDS_FILE"
 
 # =============================================================================
 # 1. SYSTEM UPDATE
 # =============================================================================
-section "1/9 — System Update"
+section "$L_SECTION_1"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get upgrade -y -qq
@@ -250,7 +415,7 @@ apt-get install -y -qq \
 if [[ "$OS_TYPE" == "ubuntu" ]]; then
   apt-get install -y -qq software-properties-common
 fi
-success "System aktualisiert."
+success "$L_SYSTEM_OK"
 
 # ─── Swap-Datei anlegen (dynamisch je nach RAM) ──────────────────────────────
 SWAP_TOTAL=$(free -m | awk '/^Swap:/{print $2}')
@@ -260,7 +425,7 @@ if [[ "$SWAP_TOTAL" -lt 512 ]]; then
   elif [[ "$TOTAL_RAM" -lt 2048 ]]; then SWAP_SIZE="1G"; SWAP_MB=1024
   else                                    SWAP_SIZE="512M"; SWAP_MB=512
   fi
-  info "RAM: ${TOTAL_RAM}MB — lege ${SWAP_SIZE} Swap an..."
+  info "$(printf "$L_SWAP_CREATE" "$TOTAL_RAM" "$SWAP_SIZE")"
   fallocate -l "$SWAP_SIZE" /swapfile 2>/dev/null \
     || dd if=/dev/zero of=/swapfile bs=1M count="${SWAP_MB}" status=none
   chmod 600 /swapfile
@@ -270,15 +435,15 @@ if [[ "$SWAP_TOTAL" -lt 512 ]]; then
   sysctl -w vm.swappiness=10 >/dev/null
   grep -q 'vm.swappiness' /etc/sysctl.conf \
     || echo 'vm.swappiness=10' >> /etc/sysctl.conf
-  success "${SWAP_SIZE} Swap angelegt und aktiviert."
+  success "$L_SWAP_OK"
 else
-  info "Swap bereits vorhanden (${SWAP_TOTAL}MB) — überspringe."
+  info "$(printf "$L_SWAP_EXISTS" "$SWAP_TOTAL")"
 fi
 
 # =============================================================================
 # 2. NGINX + FastCGI Cache
 # =============================================================================
-section "2/9 — Nginx + FastCGI Cache"
+section "$L_SECTION_2"
 apt-get install -y -qq nginx libnginx-mod-http-cache-purge \
   libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static
 systemctl enable nginx
@@ -561,7 +726,7 @@ set_real_ip_from 127.0.0.1;
 real_ip_header X-Forwarded-For;
 real_ip_recursive on;
 REALIP
-  info "Nginx Real-IP Modul konfiguriert (echte Client-IPs via X-Forwarded-For)."
+  info "$L_NGINX_REALIP"
 fi
 
 # Default site deaktivieren, WordPress aktivieren
@@ -569,7 +734,7 @@ rm -f /etc/nginx/sites-enabled/default
 ln -sf "/etc/nginx/sites-available/${WP_DOMAIN}.conf" "/etc/nginx/sites-enabled/${WP_DOMAIN}.conf"
 
 nginx -t && systemctl reload nginx
-success "Nginx konfiguriert mit FastCGI Cache."
+success "$L_NGINX_OK"
 
 # =============================================================================
 # 3. PHP-FPM + OPcache
@@ -689,18 +854,18 @@ success "PHP ${PHP_VERSION}-FPM mit OPcache konfiguriert."
 # =============================================================================
 # 4. MARIADB
 # =============================================================================
-section "4/9 — MariaDB"
+section "$L_SECTION_4"
 
-# Vorherige MariaDB-Installation bereinigen (verhindert Passwort-Konflikte bei Wiederholung)
+# Clean up previous MariaDB installation (prevents password conflicts on re-run)
 if dpkg -l mariadb-server 2>/dev/null | grep -q '^ii'; then
-  info "Vorherige MariaDB-Installation erkannt — bereinige für Neuinstallation..."
+  info "$L_MARIADB_CLEAN"
   systemctl stop mariadb 2>/dev/null || true
   echo "mariadb-server mariadb-server/postrm_remove_databases boolean true" \
     | debconf-set-selections 2>/dev/null || true
   DEBIAN_FRONTEND=noninteractive apt-get purge -y -qq --auto-remove \
     mariadb-server mariadb-client mariadb-common 2>/dev/null || true
   rm -rf /var/lib/mysql /etc/mysql/mariadb.conf.d/99-wordpress.cnf
-  info "MariaDB bereinigt."
+  info "$L_MARIADB_CLEANED"
 fi
 
 apt-get install -y -qq mariadb-server mariadb-client
@@ -768,7 +933,7 @@ success "MariaDB konfiguriert und Datenbank '${DB_NAME}' erstellt."
 # =============================================================================
 # 5. REDIS OBJECT CACHE
 # =============================================================================
-section "5/9 — Redis Object Cache"
+section "$L_SECTION_5"
 apt-get install -y -qq redis-server
 
 cat > /etc/redis/redis.conf <<REDISCONF
@@ -802,12 +967,12 @@ REDISCONF
 
 systemctl enable redis-server
 systemctl restart redis-server
-success "Redis konfiguriert (127.0.0.1:6379, maxmemory=128mb, LRU)."
+success "$L_REDIS_OK"
 
 # =============================================================================
 # 6. UFW FIREWALL + FAIL2BAN
 # =============================================================================
-section "6/9 — UFW Firewall + Fail2ban"
+section "$L_SECTION_6"
 apt-get install -y -qq ufw fail2ban
 
 # UFW Regeln
@@ -818,7 +983,7 @@ ufw allow ssh
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
-success "UFW aktiviert: SSH, HTTP, HTTPS erlaubt."
+success "$L_UFW_OK"
 
 # Fail2ban — WordPress + Nginx Jail
 cat > /etc/fail2ban/jail.local <<'F2B'
@@ -866,14 +1031,14 @@ F2BFILTER
 
 systemctl enable fail2ban
 systemctl restart fail2ban
-success "Fail2ban mit WordPress- und Nginx-Jails aktiviert."
+success "$L_F2B_OK"
 
-success "Fail2ban: Private Netzwerke (10.x, 172.16.x, 192.168.x) immer auf Whitelist."
+success "$L_F2B_WHITELIST"
 
 # =============================================================================
 # 7. WORDPRESS DOWNLOAD + KONFIGURATION
 # =============================================================================
-section "7/9 — WordPress installieren"
+section "$L_SECTION_7"
 mkdir -p "$WP_DIR"
 cd /tmp
 
@@ -973,12 +1138,12 @@ RewriteRule . /index.php [L]
 # END WordPress
 HTACCESS
 
-success "WordPress heruntergeladen und konfiguriert."
+success "$L_WP_OK"
 
 # =============================================================================
 # 8. WP-CLI
 # =============================================================================
-section "8/9 — WP-CLI"
+section "$L_SECTION_8"
 curl -sSLo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 chmod +x /usr/local/bin/wp
 
@@ -1030,7 +1195,7 @@ sudo -u www-data wp option update default_comment_status closed --path="$WP_DIR"
 if [[ "$REVERSE_PROXY" == true || "$INSTALL_SSL" == true ]]; then
   sudo -u www-data wp option update siteurl "https://${WP_DOMAIN}" --path="$WP_DIR"
   sudo -u www-data wp option update home    "https://${WP_DOMAIN}" --path="$WP_DIR"
-  info "WordPress URLs auf https://${WP_DOMAIN} gesetzt."
+  info "$L_URLS_HTTPS"
 fi
 
 # Nginx Helper konfigurieren & neu aktivieren (nach URL + Permalink Setup,
@@ -1040,14 +1205,14 @@ sudo -u www-data wp option update rt_wp_nginx_helper_options \
   --format=json --path="$WP_DIR"
 sudo -u www-data wp plugin deactivate nginx-helper --path="$WP_DIR"
 sudo -u www-data wp plugin activate nginx-helper --path="$WP_DIR"
-success "Nginx Helper konfiguriert (FastCGI-Cache-Purge aktiv)."
+success "$L_NGINX_HELPER_OK"
 
-success "WP-CLI installiert und WordPress konfiguriert."
+success "$L_WPCLI_OK"
 
 # =============================================================================
 # 9. LOGROTATE + CRON + FINALISIERUNG
 # =============================================================================
-section "9/9 — Logrotation, Cron & finale Optimierungen"
+section "$L_SECTION_9"
 
 # cron-Daemon sicherstellen (auf Debian 13 nicht vorinstalliert)
 if ! command -v crontab &>/dev/null; then
@@ -1116,7 +1281,7 @@ mysqldump -uroot --single-transaction --routines --triggers \
 find "\${BACKUP_DIR}" -name "*.sql.gz" -mtime +7 -delete
 DBBACKUP
 chmod 750 /etc/cron.daily/wp-db-backup
-success "Automatische DB-Backups konfiguriert (/root/backups/mysql, 7 Tage Rotation)."
+success "$L_BACKUPS_OK"
 
 # ─── SSL mit Let's Encrypt (Certbot) ──────────────────────────────────────────
 if [[ "$INSTALL_SSL" == true ]]; then
@@ -1131,13 +1296,13 @@ if [[ "$INSTALL_SSL" == true ]]; then
     sed -i 's|# return 301 https://|return 301 https://|' \
       "/etc/nginx/sites-available/${WP_DOMAIN}.conf"
     systemctl reload nginx
-    success "SSL-Zertifikat eingerichtet. HTTPS aktiv."
+    success "$L_SSL_OK"
   else
-    warn "Certbot fehlgeschlagen — möglicherweise läuft ein Reverse Proxy (NPM/Cloudflare) vor diesem Server."
-    warn "SSL wird in diesem Fall vom Reverse Proxy verwaltet. Certbot auf dem WordPress-Server nicht notwendig."
+    warn "$L_SSL_WARN"
+    warn "$L_SSL_WARN2"
   fi
 else
-  info "SSL übersprungen. Manuell einrichten: certbot --nginx -d ${WP_DOMAIN}"
+  info "$L_SSL_SKIP ${WP_DOMAIN}"
 fi
 
 # ─── phpMyAdmin ───────────────────────────────────────────────────────────────

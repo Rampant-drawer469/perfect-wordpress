@@ -87,6 +87,7 @@ sudo bash install-wordpress.sh \
 | `--lang` | WordPress language code | `de_DE` |
 | `--timezone` | PHP/WordPress timezone | `Europe/Berlin` |
 | `--ssl` | Install SSL certificate via Certbot | `false` |
+| `--english` | English prompts and status messages | `false` |
 
 ### What gets installed (9 steps)
 
@@ -229,6 +230,7 @@ sudo bash install-wordpress.sh \
 | `--lang` | WordPress-Sprachcode | `de_DE` |
 | `--timezone` | PHP/WordPress-Zeitzone | `Europe/Berlin` |
 | `--ssl` | SSL-Zertifikat via Certbot installieren | `false` |
+| `--english` | Englische Ausgabe für alle Prompts und Statusmeldungen | `false` |
 
 ### Was installiert wird (9 Schritte)
 
