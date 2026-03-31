@@ -32,9 +32,25 @@ A single bash script that sets up a hardened, high-performance WordPress server 
 - Root / sudo access
 - A domain name pointing to the server (required for SSL)
 
-### Quick start
+### One-line install (directly from GitHub)
 
 ```bash
+sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh)
+```
+
+Or with flags (non-interactive):
+
+```bash
+sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh) \
+  --domain example.com --email admin@example.com --ssl
+```
+
+> **Note:** `bash <(curl ...)` is used instead of `curl | bash` to preserve interactive prompts.
+
+### Local install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o install-wordpress.sh
 sudo bash install-wordpress.sh
 ```
 
@@ -129,9 +145,25 @@ Ein einzelnes Bash-Script, das einen abgesicherten, leistungsstarken WordPress-S
 - Root / sudo Zugang
 - Ein Domainname der auf den Server zeigt (erforderlich für SSL)
 
-### Schnellstart
+### Ein-Befehl-Installation (direkt von GitHub)
 
 ```bash
+sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh)
+```
+
+Oder mit Flags (nicht-interaktiv):
+
+```bash
+sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh) \
+  --domain example.com --email admin@example.com --ssl
+```
+
+> **Hinweis:** `bash <(curl ...)` wird statt `curl | bash` verwendet, damit die interaktiven Abfragen funktionieren.
+
+### Lokale Installation
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o install-wordpress.sh
 sudo bash install-wordpress.sh
 ```
 
