@@ -476,9 +476,16 @@ server {
 # }
 VHOST
 
-# Rate limiting Zone
+# Rate limiting Zone (private Netzwerke ausgenommen — z.B. NPM als Reverse Proxy)
 cat > /etc/nginx/conf.d/rate-limiting.conf <<'RATELIMIT'
-limit_req_zone $binary_remote_addr zone=wplogin:10m rate=2r/m;
+geo $limit_key {
+    default          $binary_remote_addr;
+    127.0.0.1        "";
+    10.0.0.0/8       "";
+    172.16.0.0/12    "";
+    192.168.0.0/16   "";
+}
+limit_req_zone $limit_key zone=wplogin:10m rate=2r/m;
 RATELIMIT
 
 # Default site deaktivieren, WordPress aktivieren
