@@ -998,7 +998,10 @@ cat >> "$WP_DIR/wp-config.php" <<'DISABLEWPCRON'
 define( 'DISABLE_WP_CRON', true );
 DISABLEWPCRON
 
-(crontab -l 2>/dev/null; echo "*/5 * * * * www-data /usr/local/bin/wp --path=${WP_DIR} cron event run --due-now --quiet") | crontab -
+cat > /etc/cron.d/wordpress-cron <<WPCRON
+*/5 * * * * www-data /usr/local/bin/wp --path=${WP_DIR} cron event run --due-now --quiet
+WPCRON
+chmod 644 /etc/cron.d/wordpress-cron
 
 # ─── Automatische Datenbank-Backups (täglich, 7 Tage Rotation) ────────────────
 mkdir -p /root/backups/mysql
