@@ -39,6 +39,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# ─── Sprachauswahl / Language selection ──────────────────────────────────────
+if [[ "$ENGLISH" == false ]]; then
+  echo -e "\n${BOLD}Sprache / Language:${RESET}"
+  echo -e "  1) Deutsch  ${CYAN}[Standard / Default]${RESET}"
+  echo -e "  2) English"
+  read -rp "$(echo -e "${BOLD}Auswahl / Choice [1/2]:${RESET} ")" _lang_ui
+  [[ "${_lang_ui}" == "2" ]] && ENGLISH=true
+fi
+
 # ─── Language strings ─────────────────────────────────────────────────────────
 if [[ "$ENGLISH" == true ]]; then
   L_ROOT_ERR="Please run as root: sudo bash $0"

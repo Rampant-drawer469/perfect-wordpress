@@ -67,7 +67,7 @@ WP_DIR="/var/www/wordpress"
 NGINX_FASTCGI_CACHE_DIR="/var/cache/nginx/fastcgi"
 PHP_VERSION="8.3"
 PHP_MEMORY_LIMIT="256M"
-WP_LANG="de_DE"
+WP_LANG=""
 WP_TIMEZONE="Europe/Berlin"
 INSTALL_SSL=false
 INSTALL_PHPMYADMIN=false
@@ -94,6 +94,20 @@ while [[ $# -gt 0 ]]; do
     *) if [[ "$_ENGLISH_PRESCAN" == true ]]; then warn "Unknown parameter: $1"; else warn "Unbekannter Parameter: $1"; fi; shift ;;
   esac
 done
+
+# ─── Sprachauswahl / Language selection ──────────────────────────────────────
+if [[ "$ENGLISH" == false ]]; then
+  echo -e "\n${BOLD}Sprache / Language:${RESET}"
+  echo -e "  1) Deutsch  ${CYAN}[Standard / Default]${RESET}"
+  echo -e "  2) English"
+  read -rp "$(echo -e "${BOLD}Auswahl / Choice [1/2]:${RESET} ")" _lang_ui
+  [[ "${_lang_ui}" == "2" ]] && ENGLISH=true
+fi
+
+# WordPress-Sprache entsprechend der UI-Sprache setzen (sofern nicht per --lang übergeben)
+if [[ -z "$WP_LANG" ]]; then
+  [[ "$ENGLISH" == true ]] && WP_LANG="en_US" || WP_LANG="de_DE"
+fi
 
 # ─── Language strings ─────────────────────────────────────────────────────────
 if [[ "$ENGLISH" == true ]]; then
@@ -122,6 +136,7 @@ if [[ "$ENGLISH" == true ]]; then
   L_MEM_INVALID="Invalid selection, using 256M."
   L_PROMPT_MEM="Selection [1-4, default: 2]"
   L_PROMPT_LANG="WordPress language [en_US]"
+  L_WP_LANG_DEFAULT="en_US"
   L_PROMPT_TZ="Timezone [Europe/Berlin]"
   L_PROMPT_PROXY="Is the site behind a reverse proxy (NPM/Traefik/Cloudflare)? [y/N]"
   L_PROXY_ACTIVE="Reverse proxy mode active — SSL via Certbot will be skipped."
@@ -193,6 +208,7 @@ else
   L_MEM_INVALID="Ungültige Auswahl, verwende 256M."
   L_PROMPT_MEM="Auswahl [1-4, Standard: 2]"
   L_PROMPT_LANG="WordPress-Sprache [de_DE]"
+  L_WP_LANG_DEFAULT="de_DE"
   L_PROMPT_TZ="Zeitzone [Europe/Berlin]"
   L_PROMPT_PROXY="Läuft die Site hinter einem Reverse Proxy (NPM/Traefik/Cloudflare)? [j/N]"
   L_PROXY_ACTIVE="Reverse Proxy Modus aktiv — SSL via Certbot wird übersprungen."
@@ -296,9 +312,9 @@ if [[ "$PHP_MEMORY_LIMIT" == "256M" ]]; then
 fi
 
 # ─── Language & timezone ─────────────────────────────────────────────────────
-if [[ "$WP_LANG" == "de_DE" ]]; then
+if [[ "$WP_LANG" == "$L_WP_LANG_DEFAULT" ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_LANG}:${RESET} ")" _lang
-  WP_LANG="${_lang:-de_DE}"
+  WP_LANG="${_lang:-$L_WP_LANG_DEFAULT}"
 fi
 if [[ "$WP_TIMEZONE" == "Europe/Berlin" ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_TZ}:${RESET} ")" _tz
