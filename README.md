@@ -114,6 +114,30 @@ Database backups are stored in:
 /root/backups/mysql/  (daily, 7-day rotation)
 ```
 
+### Update
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/update-wordpress.sh -o /tmp/update-wp.sh && sudo bash /tmp/update-wp.sh
+```
+
+With flags:
+
+```bash
+sudo bash update-wordpress.sh --all          # WordPress + Plugins + Themes + System + WP-CLI + SSL
+sudo bash update-wordpress.sh                # WordPress + Plugins + Themes + Cache only
+sudo bash update-wordpress.sh --system       # additionally: system packages
+sudo bash update-wordpress.sh --wpcli        # additionally: WP-CLI
+sudo bash update-wordpress.sh --ssl          # additionally: renew SSL certificate
+```
+
+| Flag | Description |
+|------|-------------|
+| `--all` | Run all updates |
+| `--system` | Update system packages via apt |
+| `--wpcli` | Update WP-CLI to latest version |
+| `--ssl` | Renew SSL certificate via Certbot |
+| `--wp-path` | Custom WordPress path (auto-detected if omitted) |
+
 <a href="https://www.buymeacoffee.com/djanzin"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=djanzin&button_colour=00354d&font_colour=ffffff&font_family=Cookie&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
 
 ---
@@ -221,6 +245,30 @@ Datenbank-Backups befinden sich in:
 ```
 /root/backups/mysql/  (täglich, 7 Tage Rotation)
 ```
+
+### Update
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/update-wordpress.sh -o /tmp/update-wp.sh && sudo bash /tmp/update-wp.sh
+```
+
+Mit Flags:
+
+```bash
+sudo bash update-wordpress.sh --all          # WordPress + Plugins + Themes + System + WP-CLI + SSL
+sudo bash update-wordpress.sh                # Nur WordPress + Plugins + Themes + Cache
+sudo bash update-wordpress.sh --system       # Zusätzlich: System-Pakete
+sudo bash update-wordpress.sh --wpcli        # Zusätzlich: WP-CLI
+sudo bash update-wordpress.sh --ssl          # Zusätzlich: SSL-Zertifikat erneuern
+```
+
+| Flag | Beschreibung |
+|------|-------------|
+| `--all` | Alle Updates ausführen |
+| `--system` | System-Pakete via apt aktualisieren |
+| `--wpcli` | WP-CLI auf neueste Version aktualisieren |
+| `--ssl` | SSL-Zertifikat via Certbot erneuern |
+| `--wp-path` | Eigener WordPress-Pfad (wird automatisch erkannt falls nicht angegeben) |
 
 <a href="https://www.buymeacoffee.com/djanzin"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=djanzin&button_colour=00354d&font_colour=ffffff&font_family=Cookie&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
 
