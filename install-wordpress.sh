@@ -477,7 +477,7 @@ server {
 VHOST
 
 # Rate limiting Zone
-cat >> /etc/nginx/conf.d/rate-limiting.conf <<'RATELIMIT'
+cat > /etc/nginx/conf.d/rate-limiting.conf <<'RATELIMIT'
 limit_req_zone $binary_remote_addr zone=wplogin:10m rate=2r/m;
 RATELIMIT
 
@@ -496,8 +496,9 @@ if [[ "$OS_TYPE" == "ubuntu" ]]; then
   add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1
 else
   # Debian: packages.sury.org (ondrej's offizielles Debian-Repo)
+  rm -f /etc/apt/trusted.gpg.d/sury-php.gpg
   curl -fsSL https://packages.sury.org/php/apt.gpg \
-    | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/sury-php.gpg
+    | gpg --dearmor -o /etc/apt/trusted.gpg.d/sury-php.gpg
   echo "deb https://packages.sury.org/php/ $(lsb_release -cs) main" \
     > /etc/apt/sources.list.d/sury-php.list
 fi
