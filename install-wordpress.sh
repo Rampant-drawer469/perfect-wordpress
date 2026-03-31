@@ -827,6 +827,7 @@ bantime  = 1h
 findtime = 10m
 maxretry = 5
 banaction = ufw
+ignoreip  = 127.0.0.1/8 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 
 [sshd]
 enabled  = true
@@ -867,13 +868,7 @@ systemctl enable fail2ban
 systemctl restart fail2ban
 success "Fail2ban mit WordPress- und Nginx-Jails aktiviert."
 
-# Bei Reverse Proxy: private Netzwerke von Fail2ban ausschließen
-if [[ "$REVERSE_PROXY" == true ]]; then
-  sed -i '/^\[DEFAULT\]/a ignoreip = 127.0.0.1/8 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16' \
-    /etc/fail2ban/jail.local
-  systemctl restart fail2ban
-  info "Fail2ban: Private Netzwerke (10.x, 172.16.x, 192.168.x) auf Whitelist gesetzt."
-fi
+success "Fail2ban: Private Netzwerke (10.x, 172.16.x, 192.168.x) immer auf Whitelist."
 
 # =============================================================================
 # 7. WORDPRESS DOWNLOAD + KONFIGURATION
