@@ -191,8 +191,10 @@ apt-get upgrade -y -qq
 apt-get install -y -qq \
   curl wget gnupg2 lsb-release ca-certificates \
   unzip zip git htop ncdu tree net-tools
-# software-properties-common nur auf Ubuntu nötig (add-apt-repository)
-[[ "$OS_TYPE" == "ubuntu" ]] && apt-get install -y -qq software-properties-common
+# software-properties-common nur auf Ubuntu nötig (für add-apt-repository)
+if [[ "$OS_TYPE" == "ubuntu" ]]; then
+  apt-get install -y -qq software-properties-common
+fi
 success "System aktualisiert."
 
 # ─── Swap-Datei anlegen (falls < 1 GB Swap vorhanden) ────────────────────────
